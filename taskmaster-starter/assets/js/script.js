@@ -13,6 +13,9 @@ var createTask = function (taskText, taskDate, taskList) {
   // append span and p element to parent li
   taskLi.append(taskSpan, taskP);
 
+  //check due dates
+  auditTask(taskLi);
+
 
   // append to ul list on the page
   $("#list-" + taskList).append(taskLi);
@@ -44,7 +47,27 @@ var loadTasks = function () {
 var saveTasks = function () {
   localStorage.setItem("tasks", JSON.stringify(tasks));
 };
+//audit tasks to see if they are overdue/upcoming..
+var auditTask = function (taskEl) {
+  // get date from task element
+  var date = $(taskEl).find("span").text().trim();
+  // ensure it worked
+  console.log(date);
 
+  // convert to moment object at 5:00pm
+  var time = moment(date, "L").set("hour", 17);
+  // this should print out an object for the value of the date variable, but at 5:00pm of that date
+  $(taskEl).removeClass("list-group-item-warning list-group-item-danger");
+  if (moment().isAfter(time)) {
+    $(taskEl).addClass("list-group-item-danger");
+  }
+  else if (Math.abs(moment().diff(time, "days")) <= 2) {
+    $(taskEl).addClass("list-group-item-warning");
+  }
+
+};
+
+//listener for click on list-group
 $(".list-group").on("click", "p", function () {
   var text = $(this)
     .text()
@@ -56,6 +79,7 @@ $(".list-group").on("click", "p", function () {
   textInput.trigger("focus");
 });
 
+//listener for clicking OUT of list-group el
 $(".list-group").on("blur", "textarea", function () {
   var text = $(this)
     .val()
@@ -73,7 +97,6 @@ $(".list-group").on("blur", "textarea", function () {
   var taskP = $("<p>")
     .addClass("m-1")
     .text(text);
-
   // replace textarea with p element
   $(this).replaceWith(taskP);
 });
@@ -85,6 +108,14 @@ $(".list-group").on("click", "span", function () {
     .text()
     .trim();
 
+  //add datepicker
+  $("#modalDueDate").datepicker({
+    minDate: 1,
+    onClose: function () {
+      $(this).trigger("change")
+    }
+  });
+
   // create new input element
   var dateInput = $("<input>")
     .attr("type", "text")
@@ -94,12 +125,16 @@ $(".list-group").on("click", "span", function () {
   // swap out elements
   $(this).replaceWith(dateInput);
 
+  //allow datepicker UI
+  dateInput.datepicker({
+    minDate: 1
+  });
   // automatically focus on new element
   dateInput.trigger("focus");
 });
 
 // value of due date was changed
-$(".list-group").on("blur", "input[type='text']", function () {
+$(".list-group").on("change", "input[type='text']", function () {
   // get current text
   var date = $(this)
     .val()
@@ -127,6 +162,10 @@ $(".list-group").on("blur", "input[type='text']", function () {
 
   // replace input with span element
   $(this).replaceWith(taskSpan);
+
+  // Pass task's <li> element into auditTask() to check new due date
+  auditTask($(taskSpan).closest(".list-group-item"));
+
 });
 
 //create sortable list feature
@@ -235,6 +274,8 @@ $("#remove-tasks").on("click", function () {
   }
   saveTasks();
 });
+
+
 
 // load tasks for the first time
 loadTasks();

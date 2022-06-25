@@ -85,7 +85,7 @@ $(".list-group").on("blur", "textarea", function () {
     .val()
     .trim();
   var status = $(this)
-    .closest(".list-group")
+    .closest(".list-group")//traversing the DOM
     .attr("id")
     .replace("list-", "");
   var index = $(this)
